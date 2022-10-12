@@ -3,7 +3,7 @@
         {
           "type": "go",
           "name": "dirnote",
-          "goExecPath": "./dirnote",
+          "goExecPath": "/opt/homebrew/bin/go",
           "buildTargets": ["main.go",],
         },
 

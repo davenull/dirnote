@@ -90,7 +90,7 @@ func dbPrep() (err error) {
 	return err
 }
 
-func checkOrAddDir(db *sql.DB, tx *sql.Tx, directory string) (directoryResult int, directoryName string) {
+func checkOrAddDir(db *sql.DB, directory string) (directoryResult int, directoryName string) {
 	selectstmt, err := db.Prepare("select id, dirname from directories where dirname = ?")
 	if err != nil {
 		log.Fatal(err)
@@ -100,9 +100,14 @@ func checkOrAddDir(db *sql.DB, tx *sql.Tx, directory string) (directoryResult in
 
 	var dir int
 	var dirname string
+
 	err = selectstmt.QueryRow(directory).Scan(&dir, &dirname)
 	if errors.Is(err, sql.ErrNoRows) {
-		fmt.Println(directory + " added")
+
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatal(err)
+		}
 		insertstmt, err := tx.Prepare("INSERT INTO directories(dirname) VALUES (?)")
 		if err != nil {
 			log.Fatal(err)
@@ -120,27 +125,31 @@ func checkOrAddDir(db *sql.DB, tx *sql.Tx, directory string) (directoryResult in
 			log.Fatal(err)
 		}
 
-		err = selectstmt.QueryRow(directory).Scan(&dir, &dirname)
-		if err != nil {
-			log.Fatal(err)
-		}
+//		err = selectstmt.QueryRow(directory).Scan(&dir, &dirname)
+//		if err != nil {
+//			log.Fatal(err)
+//		}
 
 		//err = nil
 	} else {
 		if err != nil {
-			log.Print(err)
+			log.Fatal(err)
 		}
 	}
 
-	err = dbPrep()
-	if err != nil {
-		log.Println(err)
-	}
-
+//	err = dbPrep()
+//	if err != nil {
+//		log.Println(err)
+//	}
+	fmt.Println(directory + " added")
 	return dir, dirname
 }
 
-func addNote(tx *sql.Tx, dir int, noteData string) (err error) {
+func addNote(db *sql.DB, dir int, noteData string) (err error) {
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
 	insertstmt, err := tx.Prepare("INSERT INTO notes(directory, note_data) VALUES (?, ?)")
 	if err != nil {
 		log.Fatal(err)
@@ -178,7 +187,7 @@ func findDirID(db *sql.DB, path string) (id int, err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	log.Print(dir)
 	return dir, err
 }
 func getNotesForDirectory(db *sql.DB, noteDirectory int) (err error) {
@@ -249,10 +258,7 @@ func main() {
 
 	defer db.Close()
 
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
+
 
 	cmds := []acmd.Command{
 		{
@@ -260,13 +266,14 @@ func main() {
 			Description: "adds a new note in the current dir",
 			ExecFunc: func(ctx context.Context, args []string) error {
 				fmt.Println(path)
-				checkOrAddDir(db, tx, path)
+				checkOrAddDir(db, path)
 				dir, err := findDirID(db, path)
-				fmt.Println(dir)
+				//fmt.Println(dir)
 				if err != nil {
 					log.Fatal(err)
 				}
-				err = addNote(tx, dir, args[0])
+
+				err = addNote(db, dir, args[0])
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -303,7 +310,7 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-				//fmt.Print(id)
+				// fmt.Print(id)
 				err = getNotesForDirectory(db, id)
 				if err != nil {
 					log.Fatal(err)
