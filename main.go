@@ -207,7 +207,7 @@ func getNotesForDirectory(db *sql.DB, noteDirectory int) (err error) {
 		err := rows.Scan(&id, &note_data)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-			fmt.Print("No result for current directory")
+			fmt.Print("No notes for current directory")
 			} else {
 				log.Fatal(err)
 			}
@@ -222,12 +222,7 @@ func getNotesForDirectory(db *sql.DB, noteDirectory int) (err error) {
 				log.Fatal(err)
 			}
 	}
-
-	if errors.Is(err, sql.ErrNoRows) {
-		fmt.Print("No resulst for current directory")
-	} else {
-		log.Fatal(err)
-	}
+	
 	return err
 }
 
