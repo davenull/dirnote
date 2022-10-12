@@ -2,7 +2,7 @@
 
   Why keep notes about directories in the directories? I can't think of a good reason...
 
-  So I created dirnotes, a simple CLI app written in go, powered by sqlite. Simply cd to your dir, and type `dn get` to see the notes you created previously. No need to remeber what dir you are in, dirnotes followr you around your computer.
+  So I created dirnotes, a simple CLI app written in go, powered by sqlite. Simply cd to your dir, and type `dn get` to see the notes you created previously. No need to remeber what dir you are in, dirnotes follows you around your computer.
 
 ## Install
 ```
