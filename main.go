@@ -44,7 +44,7 @@ func dbCheckOrCreate() (error error) {
 		}
 	}
 	//err = nil
-	return nil
+	return err
 }
 func dbPrep() (err error) {
 	db, err := sql.Open("sqlite3", os.Getenv("HOME")+"/.dirnote/dirnotes.sqlite")
@@ -185,17 +185,20 @@ func findDirID(db *sql.DB, path string) (id int, err error) {
 	var dir int
 	err = selectstmt.QueryRow(path).Scan(&dir)
 	if err != nil {
-		log.Fatal(err)
+		if errors.Is(err, sql.ErrNoRows) {
+			fmt.Println("Directory not in dirnote")
+		}else{
+			log.Fatal(err)
+		}
 	}
-	log.Print(dir)
+	//log.Print(dir)
 	return dir, err
 }
 func getNotesForDirectory(db *sql.DB, noteDirectory int) (err error) {
 	rows, err := db.Query("select id, note_data from notes where directory = ?", noteDirectory)
 	if err != nil {
-		log.Fatal(err)
+			log.Fatal(err)
 	}
-
 	defer rows.Close()
 
 	var id int
@@ -203,19 +206,28 @@ func getNotesForDirectory(db *sql.DB, noteDirectory int) (err error) {
 	for rows.Next() {
 		err := rows.Scan(&id, &note_data)
 		if err != nil {
-			log.Fatal(err)
+			if errors.Is(err, sql.ErrNoRows) {
+			fmt.Print("No result for current directory")
+			} else {
+				log.Fatal(err)
+			}
 		}
 		fmt.Printf("Note: %d -- %s \n", id, note_data)
 		//log.Println(id, note_data)
 	}
-
+	rows.Close()
 	err = rows.Err()
 	if err != nil {
-		log.Fatal(err)
+		if errors.Is(err, sql.ErrNoRows) {} else {
+				log.Fatal(err)
+			}
 	}
 
-	rows.Close()
-
+	if errors.Is(err, sql.ErrNoRows) {
+		fmt.Print("No resulst for current directory")
+	} else {
+		log.Fatal(err)
+	}
 	return err
 }
 
@@ -244,7 +256,7 @@ func main() {
 
 	err = dbCheckOrCreate()
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	if err != nil {
@@ -308,12 +320,18 @@ func main() {
 
 				id, err := findDirID(db, path)
 				if err != nil {
-					log.Fatal(err)
+					if errors.Is(err, sql.ErrNoRows) {
+					} else {
+						//log.Fatal(err)
+					}
 				}
 				// fmt.Print(id)
 				err = getNotesForDirectory(db, id)
 				if err != nil {
-					log.Fatal(err)
+					if errors.Is(err, sql.ErrNoRows) {
+					} else {
+						//log.Fatal(err)
+					}
 				}
 				return nil
 			},
@@ -322,7 +340,7 @@ func main() {
 	r := acmd.RunnerOf(cmds, acmd.Config{
 		AppName:        "dirnote",
 		AppDescription: "An app to keep notes for your dirs",
-		Version:        "the best v0.0.1",
+		Version:        "the best v0.0.2",
 		// Context - if nil `signal.Notify` will be used
 		// Args - if nil `os.Args[1:]` will be used
 		// Usage - if nil default print will be used
