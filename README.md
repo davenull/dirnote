@@ -27,7 +27,7 @@ On first run, dirnote will set itself up and create the database, then you just 
 ## Backing Up dirnote DB
 
 As the DB is only open when you run the command, backing up the db file to a cloud drive is simple.
-The only thing you need to save is `~/.dirnote/dirnotes.db` and you can rest assured your notes are safe!
+The only thing you need to save is `~/.dirnote/dirnotes.sqlite` and you can rest assured your notes are safe!
 
 
 
