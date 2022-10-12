@@ -4,7 +4,7 @@
 
   So I created dirnotes, a simple CLI app written in go, powered by sqlite. Simply cd to your dir, and type `dn get` to see the notes you created previously. No need to remeber what dir you are in, dirnotes followr you around your computer.
 
-Install:
+## Install
 ```
 wget https://github.com/davenull/dirnote/releases/download/dev0.0.2/dn-osx-ARM64
 mv dn-osx-ARM64 dn
