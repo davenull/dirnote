@@ -30,6 +30,9 @@ As the DB is only open when you run the command, backing up the db file to a clo
 The only thing you need to save is `~/.dirnote/dirnotes.db` and you can rest assured your notes are safe!
 
 
+
+## CLI help output
+
 ```
   dn help
 /Users/birdie/.dirnote
