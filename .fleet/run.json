@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+          "type": "go",
+          "name": "dirnote",
+          "goExecPath": "./dirnote",
+          "buildTargets": ["main.go",],
+        },
+
+    ]
+}

@@ -26,15 +26,18 @@ func dbCheckOrCreate() (error error) {
 			}
 		}
 
-		os.Create(os.Getenv("HOME") + "/.dirnote/dirnotes.sqlite")
-		if os.IsNotExist(err) {
-			log.Print(err)
-		}
+		_, err = os.Create(os.Getenv("HOME") + "/.dirnote/dirnotes.sqlite")
+		if err != nil {
+			if os.IsNotExist(err) {
+				log.Print(err)
+			}
 
-		if err == os.ErrExist {
-			log.Print(err)
+			if err == os.ErrExist {
+				log.Print(err)
+			} else {
+				log.Fatal(err)
+			}
 		}
-
 		err = dbPrep()
 		if err != nil {
 			log.Fatal(err)
@@ -230,8 +233,6 @@ func main() {
 		log.Println(err)
 	}
 
-	fmt.Println(path)
-
 	err = dbCheckOrCreate()
 	if err != nil {
 		log.Println(err)
@@ -258,6 +259,7 @@ func main() {
 			Name:        "add",
 			Description: "adds a new note in the current dir",
 			ExecFunc: func(ctx context.Context, args []string) error {
+				fmt.Println(path)
 				checkOrAddDir(db, tx, path)
 				dir, err := findDirID(db, path)
 				fmt.Println(dir)
@@ -275,12 +277,13 @@ func main() {
 			Name:        "del",
 			Description: "deletes a note by global ID",
 			ExecFunc: func(ctx context.Context, args []string) error {
+
 				i, err := strconv.Atoi(args[0])
 				if err != nil {
 					log.Fatal(err)
 				}
 
-				deleteNoteByID(db, i)
+				err = deleteNoteByID(db, i)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -291,6 +294,10 @@ func main() {
 			Name:        "get",
 			Description: "gets notes for the dir",
 			ExecFunc: func(ctx context.Context, args []string) error {
+				if len(args) > 0 {
+					path = args[0]
+				}
+				fmt.Println(path)
 
 				id, err := findDirID(db, path)
 				if err != nil {
