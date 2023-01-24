@@ -11,6 +11,7 @@ import (
 
 	"github.com/cristalhq/acmd"
 	_ "github.com/mattn/go-sqlite3"
+	//_ "github.com/rqlite/go-sqlite3"
 )
 
 func dbCheckOrCreate() (error error) {
@@ -47,7 +48,9 @@ func dbCheckOrCreate() (error error) {
 	return err
 }
 func dbPrep() (err error) {
-	db, err := sql.Open("sqlite3", os.Getenv("HOME")+"/.dirnote/dirnotes.sqlite")
+
+	//db, err := sql.Open("sqlite3", os.Getenv("HOME")+"/.dirnote/dirnotes.sqlite")
+	db, err := sql.Open("sqlite3", "http://localhost:4001")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -125,10 +128,10 @@ func checkOrAddDir(db *sql.DB, directory string) (directoryResult int, directory
 			log.Fatal(err)
 		}
 
-//		err = selectstmt.QueryRow(directory).Scan(&dir, &dirname)
-//		if err != nil {
-//			log.Fatal(err)
-//		}
+		//		err = selectstmt.QueryRow(directory).Scan(&dir, &dirname)
+		//		if err != nil {
+		//			log.Fatal(err)
+		//		}
 
 		//err = nil
 	} else {
@@ -137,10 +140,10 @@ func checkOrAddDir(db *sql.DB, directory string) (directoryResult int, directory
 		}
 	}
 
-//	err = dbPrep()
-//	if err != nil {
-//		log.Println(err)
-//	}
+	//	err = dbPrep()
+	//	if err != nil {
+	//		log.Println(err)
+	//	}
 	fmt.Println(directory + " added")
 	return dir, dirname
 }
@@ -187,7 +190,7 @@ func findDirID(db *sql.DB, path string) (id int, err error) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			fmt.Println("Directory not in dirnote")
-		}else{
+		} else {
 			log.Fatal(err)
 		}
 	}
@@ -197,7 +200,7 @@ func findDirID(db *sql.DB, path string) (id int, err error) {
 func getNotesForDirectory(db *sql.DB, noteDirectory int) (err error) {
 	rows, err := db.Query("select id, note_data from notes where directory = ?", noteDirectory)
 	if err != nil {
-			log.Fatal(err)
+		log.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -207,7 +210,7 @@ func getNotesForDirectory(db *sql.DB, noteDirectory int) (err error) {
 		err := rows.Scan(&id, &note_data)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-			fmt.Print("No notes for current directory")
+				fmt.Print("No notes for current directory")
 			} else {
 				log.Fatal(err)
 			}
@@ -218,11 +221,58 @@ func getNotesForDirectory(db *sql.DB, noteDirectory int) (err error) {
 	rows.Close()
 	err = rows.Err()
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {} else {
-				log.Fatal(err)
-			}
+		if errors.Is(err, sql.ErrNoRows) {
+		} else {
+			log.Fatal(err)
+		}
 	}
-	
+
+	return err
+}
+
+// this function gets the note by global id
+func getNote(db *sql.DB, id int) (note string, err error) {
+	selectstmt, err := db.Prepare("select note_data from notes where id =?")
+	if err != nil {
+		log.Fatal(err)
+		return "", err
+	}
+	defer selectstmt.Close()
+
+	var note_data string
+	err = selectstmt.QueryRow(id).Scan(&note_data)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			fmt.Print("No notes found for that ID")
+		} else {
+			log.Fatal(err)
+		}
+	}
+	fmt.Printf("Note: %s \n", note_data)
+	return note_data, err
+}
+
+// this function fetches the note from the database and edits the note in the system EDITIOR
+func editNoteByID(db *sql.DB, id int, noteData string) (err error) {
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//insertstmt, err := tx.Prepare("INSERT INTO notes(id, note_data)VALUES(?,?)")
+	insertstmt, err := tx.Prepare("UPDATE notes SET note_data = ? WHERE id = ?;")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer insertstmt.Close()
+	_, err = insertstmt.Exec(noteData, id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Fatal(err)
+	}
 	return err
 }
 
@@ -259,13 +309,12 @@ func main() {
 	}
 
 	db, err := sql.Open("sqlite3", os.Getenv("HOME")+"/.dirnote/dirnotes.sqlite")
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer db.Close()
-
-
 
 	cmds := []acmd.Command{
 		{
@@ -285,6 +334,24 @@ func main() {
 					log.Fatal(err)
 				}
 				return nil
+			},
+		},
+		{
+			Name:        "edit",
+			Description: "edits a note by id",
+			ExecFunc: func(ctx context.Context, args []string) error {
+
+				i, err := strconv.Atoi(args[0])
+				if err != nil {
+					log.Fatal(err)
+
+				}
+				err = editNoteByID(db, i, args[1])
+				if err != nil {
+					log.Fatal(err)
+				}
+				return nil
+
 			},
 		},
 		{
@@ -317,7 +384,7 @@ func main() {
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 					} else {
-						//log.Fatal(err)
+						log.Fatal(err)
 					}
 				}
 				// fmt.Print(id)
@@ -325,7 +392,28 @@ func main() {
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 					} else {
-						//log.Fatal(err)
+						log.Fatal(err)
+					}
+				}
+				return nil
+			},
+		},
+		//this gets the note by id
+		{
+			Name:        "getnote",
+			Description: "gets notes for the dir",
+			ExecFunc: func(ctx context.Context, args []string) error {
+				if len(args) > 0 {
+					id, err := strconv.Atoi(args[0])
+					if err != nil {
+						log.Fatal(err)
+					}
+					_, err = getNote(db, id)
+					if err != nil {
+						if errors.Is(err, sql.ErrNoRows) {
+						} else {
+							log.Fatal(err)
+						}
 					}
 				}
 				return nil
@@ -335,7 +423,7 @@ func main() {
 	r := acmd.RunnerOf(cmds, acmd.Config{
 		AppName:        "dirnote",
 		AppDescription: "An app to keep notes for your dirs",
-		Version:        "the best v0.0.2",
+		Version:        "beesknees v0.0.3",
 		// Context - if nil `signal.Notify` will be used
 		// Args - if nil `os.Args[1:]` will be used
 		// Usage - if nil default print will be used

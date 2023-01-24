@@ -1,10 +1,11 @@
 {
-    "configurations": [
-        {
-          "type": "go",
-          "name": "dirnote",
-          "goExecPath": "/opt/homebrew/bin/go",
-          "buildTargets": ["main.go",],
+  "configurations": [
+    {
+      "type": "go",
+      "name": "dirnote",
+      "goExecPath": "/opt/homebrew/bin/go",
+      "buildTargets": ["main.go"],
+      "args": "get"
         },
 
     ]
