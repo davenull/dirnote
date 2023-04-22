@@ -49,8 +49,8 @@ func dbCheckOrCreate() (error error) {
 }
 func dbPrep() (err error) {
 
-	//db, err := sql.Open("sqlite3", os.Getenv("HOME")+"/.dirnote/dirnotes.sqlite")
-	db, err := sql.Open("sqlite3", "http://localhost:4001")
+	db, err := sql.Open("sqlite3", os.Getenv("HOME")+"/.dirnote/dirnotes.sqlite")
+	//db, err := sql.Open("sqlite3", "http://localhost:4001")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -252,7 +252,7 @@ func getNote(db *sql.DB, id int) (note string, err error) {
 	return note_data, err
 }
 
-// this function fetches the note from the database and edits the note in the system EDITIOR
+// this function replaces the note with the new string
 func editNoteByID(db *sql.DB, id int, noteData string) (err error) {
 	tx, err := db.Begin()
 	if err != nil {
@@ -401,7 +401,7 @@ func main() {
 		//this gets the note by id
 		{
 			Name:        "getnote",
-			Description: "gets notes for the dir",
+			Description: "gets note by ID",
 			ExecFunc: func(ctx context.Context, args []string) error {
 				if len(args) > 0 {
 					id, err := strconv.Atoi(args[0])
